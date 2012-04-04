@@ -1,8 +1,7 @@
 <%
 f = taglib("/lib/form")
 f.block do
-  i = 0
-  descriptor.installable_tools.each do |tool, name|
+  descriptor.installable_tools.each_with_index do |(tool, name), i|
 %><div name='<%= "tool-#{i}" %>'>
 <%
     f.entry(:field => "tool") do
@@ -11,7 +10,6 @@ f.block do
     f.entry(:field => "variable") do
       f.checkbox(:title => name, :json => "#{tool};#{name}")
     end
-    i += 1
 %></div>
 <%
   end
