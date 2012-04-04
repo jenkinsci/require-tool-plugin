@@ -5,7 +5,9 @@ f.block do
   descriptor.installable_tools.each_with_index do |(tool, name), i|
     f.rowSet(:name => "tool_#{i}") do
       f.entry(:field => "tool") do
-        f.checkbox(:title => name, :json => "#{tool};#{name}")
+        f.checkbox(:title => name,
+                   :json => "#{tool};#{name}",
+                   :checked => instance ? instance.getTarget.is_required?(tool, name) : false)
       end
       # TODO: <input type='text'> for env var name.
       #f.entry(:field => "variable") do

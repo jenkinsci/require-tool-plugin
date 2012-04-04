@@ -53,6 +53,15 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
     end
   end
 
+  # Used in view to check stuff.
+  def is_required?(id, name)
+    if tools
+      tools.any? { |tool| tool["descriptor_id"] == id and tool["name"] == name }
+    else
+      false
+    end
+  end
+
   # Perform setup for a build
   #
   # invoked after checkout, but before any `Builder`s have been run
