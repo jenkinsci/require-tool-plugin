@@ -68,7 +68,9 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
 
       tool = install_tool(build, listener, tool)
       if tool
-        # TODO: Set env vars.
+        env_var = tool_description['name'].upcase.gsub(/[^A-Z0-9]+/, '_') + '_HOME'
+        build.environment(listener).put(env_var, tool.home)
+        listener.info "Making #{env_var} point to #{tool_description['name']}"
       else
         build.halt("Could not install tool!")
       end
