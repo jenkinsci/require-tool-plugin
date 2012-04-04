@@ -15,10 +15,36 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
     end
   end
 
+  attr_accessor :tools
+
+  def tool_instance(tool_name)
+    id, name = tool_name.split(';', 2)
+    descriptor = Java.jenkins.model.Jenkins.instance.descriptor(id)
+    tool = descriptor.installations.find {|ti| ti.name == name }
+  end
+
+  # This mimics hudson.cli.InstallToolCommand#install until it's public.
+  def install_tool(build, listener, tool)
+    build = build.native
+    exec = build.executor
+    return nil unless exec
+
+    node = exec.owner.node
+    if tool.java_kind_of?(Java.hudson.slaves.NodeSpecific)
+      tool = tool.forNode(node, listener)
+    end
+
+    if tool.java_kind_of?(Java.hudson.model.EnvironmentSpecific)
+      tool = tool.forEnvironment(build.environment(listener))
+    end
+
+    tool
+  end
+
   # Invoked with the form parameters when this extension point
   # is created from a configuration screen.
   def initialize(attrs = {})
-    puts attrs.inspect
+    @tools = attrs.find_all {|attr, _| attr.start_with?('tool_')}.collect {|_, v| v.empty? ? nil : v}.flatten
   end
 
   # Perform setup for a build
@@ -28,18 +54,17 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
   # @param [Jenkins::Launcher] launcher a launcher for the orderly starting/stopping of processes.
   # @param [Jenkins::Model::Listener] listener channel for interacting with build output console
   def setup(build, launcher, listener)
+    tools.each do |tool|
+      next unless tool["tool"]
+      instance = tool_instance(tool["tool"])
+      instance = install_tool(build, listener, instance)
 
-  end
-
-  # Optionally perform optional teardown for a build
-  #
-  # invoked after a build has run for better or for worse. It's ok if subclasses
-  # don't override this.
-  #
-  # @param [Jenkins::Model::Build] the build which has completed
-  # @param [Jenkins::Model::Listener] listener channel for interacting with build output console
-  def teardown(build, listener)
-
+      if instance
+        # TODO: Set env vars.
+      else
+        build.halt("Could not install tool!")
+      end
+    end
   end
 
   describe_as Java.hudson.tasks.BuildWrapper, :with => RequireToolDescriptor

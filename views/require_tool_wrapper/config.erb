@@ -7,9 +7,10 @@ f.block do
       f.entry(:field => "tool") do
         f.checkbox(:title => name, :json => "#{tool};#{name}")
       end
-      f.entry(:field => "variable") do
-        f.checkbox(:title => name, :json => "#{tool};#{name}")
-      end
+      # TODO: <input type='text'> for env var name.
+      #f.entry(:field => "variable") do
+      #  f.checkbox(:title => name, :json => "#{tool};#{name}")
+      #end
     end
   end
 %></table><%
