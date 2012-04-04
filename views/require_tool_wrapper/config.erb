@@ -1,4 +1,7 @@
 <%
+inst = respond_to?(:instance) ? instance : nil
+inst = inst.getTarget if inst.respond_to?(:getTarget)
+
 f = taglib("/lib/form")
 f.block do
 %><table><%
@@ -7,7 +10,7 @@ f.block do
       f.entry(:field => "tool") do
         f.checkbox(:title => name,
                    :json => "#{tool};#{name}",
-                   :checked => instance ? instance.getTarget.is_required?(tool, name) : false)
+                   :checked => inst ? inst.is_required?(tool, name) : false)
       end
       # TODO: <input type='text'> for env var name.
       #f.entry(:field => "variable") do
