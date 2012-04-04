@@ -1,6 +1,7 @@
 java_import 'hudson.slaves.NodeSpecific'
 java_import 'hudson.model.EnvironmentSpecific'
-java_import 'jenkins.model.Jenkins'
+# Can't java_import, since it clashes with the ruby-runtime Jenkins module.
+JenkinsModel = Java.jenkins.model.Jenkins
 
 class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
   display_name "Require tool installations"
@@ -19,7 +20,7 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
   attr_accessor :tools
 
   def tool_instance(tool)
-    descriptor = Jenkins.instance.descriptor(tool['descriptor_id'])
+    descriptor = JenkinsModel.instance.descriptor(tool['descriptor_id'])
     descriptor.installations.find { |ti| ti.name == tool['name'] }
   end
 
@@ -60,19 +61,25 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
   # @param [Jenkins::Model::Listener] listener channel for interacting with build output console
   def setup(build, launcher, listener)
     tools.each do |tool_description|
-      next unless tool_description["name"] and tool_description["descriptor_id"]
+      next if tool_description.empty?
+
+      unless tool_description["name"] and tool_description["descriptor_id"]
+        listener.error "[require-tool] Invalid configuration data: #{tool_description.inspect}"
+        next
+      end
+
       tool = tool_instance(tool_description)
       unless tool
-        build.halt("Could not look up tool: #{tool_description.inspect}")
+        build.halt("[require-tool] Could not look up tool: #{tool_description.inspect}")
       end
 
       tool = install_tool(build, listener, tool)
       if tool
         env_var = tool_description['name'].upcase.gsub(/[^A-Z0-9]+/, '_') + '_HOME'
-        build.environment(listener).put(env_var, tool.home)
-        listener.info "Making #{env_var} point to #{tool_description['name']}"
+        build.env[env_var] = tool.home
+        listener.info "[require-tool] Making #{env_var} point to #{tool_description['name']}"
       else
-        build.halt("Could not install tool!")
+        build.halt("[require-tool] Could not install tool!")
       end
     end
   end
