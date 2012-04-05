@@ -15,6 +15,14 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
       installable_tools = tool_installations.find_all { |ti| ti.properties.get(InstallSourceProperty.java_class) }
       installable_tools.collect { |ti| [ti.descriptor.id, ti.name] }
     end
+
+    def self.env_var(name)
+      name.upcase.gsub(/[^A-Z0-9]+/, '_') + '_HOME'
+    end
+
+    def env_var(name)
+      self.class.env_var(name)
+    end
   end
 
   attr_accessor :tools
@@ -83,8 +91,14 @@ class RequireToolWrapper < Jenkins::Tasks::BuildWrapper
       end
 
       tool = install_tool(build, listener, tool)
+
       if tool
-        env_var = tool_description['name'].upcase.gsub(/[^A-Z0-9]+/, '_') + '_HOME'
+        # XXX: kohsuke, this doesn't work ('class
+        # XXX:   org.jruby.proxy.hudson.tasks.BuildWrapper$Proxy1 is missing its
+        # XXX:   descriptor')
+        # env_var = Jenkins.plugin.import(Jenkins.plugin.export(self).descriptor).env_var(tool_description['name'])
+
+        env_var = RequireToolDescriptor.env_var(tool_description['name'])
         build.env[env_var] = tool.home
         listener.info "[require-tool] Making #{env_var} point to #{tool_description['name']}"
       else

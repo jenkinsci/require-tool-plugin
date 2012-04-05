@@ -1,5 +1,7 @@
 <%
-inst = respond_to?(:instance) ? instance : nil
+# XXX: Temporary workaround since using a nil variable causes a NoMethodError,
+# and 'instance' returns a proxy and not the ruby object itself.
+inst = instance rescue nil
 inst = inst.getTarget if inst.respond_to?(:getTarget)
 
 f = taglib("/lib/form")
@@ -8,7 +10,7 @@ f.block do
   descriptor.installable_tools.each_with_index do |(tool, name), i|
     f.rowSet(:name => "tool_#{i}") do
       f.entry(:field => "tool") do
-        f.checkbox(:title => name,
+        f.checkbox(:title => "#{name} (#{descriptor.env_var(name)})",
                    :json => "#{tool};#{name}",
                    :checked => inst ? inst.is_required?(tool, name) : false)
       end
